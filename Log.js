@@ -99,7 +99,7 @@ Log.prototype = {
 		this.nodeValue.innerHTML = "<span></span> ";
 	},
 	
-	add : function(section, value, process, overwrite, mouseEnter, mouseLeave){
+	add : function(section, value, process, overwrite){
 		if(this.section[section] !== undefined && !overwrite)
 			return this.logError("["+ section +"] use overwrite boolean for an existing section.");
 		
@@ -121,13 +121,10 @@ Log.prototype = {
 		this.addOnTree(section, parent, name, value, process);
 
 		var sec = this.section[section];
-		if(sec !== undefined){
-			if(mouseEnter instanceof Function)
-				sec.node.addEventListener('mouseenter', mouseEnter, false);
-
-			if(mouseEnter instanceof Function)
-				sec.node.addEventListener('mouseleave', mouseLeave, false);
-		}
+		if(sec !== undefined)
+			return sec.node;
+		else
+			return undefined;
 	},
 	
 	addOnTree : function(section, parent, name, value, process){
@@ -195,14 +192,10 @@ Log.prototype = {
 		}
 	},
 	
-	update : function(section, value, forceAdd){
+	update : function(section, value){
 		var sec = this.section[section];
-		if(sec === undefined && forceAdd){
-			if(section.indexOf('.') === -1)
-				this.add(section, value);
-			
+		if(sec === undefined)
 			return;	
-		}
 		
 		if(value instanceof Object){
 			if(sec.parent !== undefined)
@@ -211,22 +204,18 @@ Log.prototype = {
 			else if(!sec.disable)
 				for(key in sec.value)
 					if(value[key] !== undefined)
-						this.update(section +'.'+ key, value[key], forceAdd);
+						this.update(section +'.'+ key, value[key]);
 
 		}else
 			if(sec.parent === undefined)
 				return this.logError("["+ section +"] is an object section.");
 		
 			else{
-				if(sec.process === undefined){
-					sec.value = value;
-					sec.node.data = sec.value;
-					
-				}else{
+				if(sec.process !== undefined)
 					sec.value = sec.process(value, sec.value);
-					sec.sendValue = value;
-					sec.node.data = sec.value+' \n('+value+')';
-				}
+
+				sec.sendValue = value;
+				sec.node.data = sec.value;
 
 				sec.parent.value[sec.name] = sec.value;
 			}
@@ -270,16 +259,16 @@ Log.prototype = {
 	
 	nodeEvent : function(e){
 		if(this.parentNode.style.height === ""){
-			this.parentNode.style.height = parseInt(Log.style.fontSize)*1.2 + 'px';
+			this.parentNode.style.height = parseInt(log.style.fontSize)*1.2 + 'px';
 			
-			if(this.section.disable !== undefined)
-				this.section.disable = true;
+			if(this['data-section'].disable !== undefined)
+				this['data-section'].disable = true;
 			
 		}else{
 			this.parentNode.style.height = "";
 			
-			if(this.section.disable !== undefined)
-				this.section.disable = false;
+			if(this['data-section'].disable !== undefined)
+				this['data-section'].disable = false;
 		}
 	},
 	
@@ -491,7 +480,7 @@ Log.prototype = {
 	updateFontSize : function(node, size){
 		var nodes = node.childNodes;
 		for(var i=0; i<nodes.length; i++)
-			this.updateSize(nodes[i], size);
+			this.updateFontSize(nodes[i], size);
 		
 		if(node.style && node.style.height !== "")
 			node.style.height = size*1.2 +'px';
@@ -515,5 +504,6 @@ Log.prototype = {
 	}
 };
 
-return new Log();
+var log = new Log();
+return log;
 })();

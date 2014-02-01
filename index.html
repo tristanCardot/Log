@@ -3,14 +3,152 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Log</title>
+	<style>
+		body{
+			margin: 0px;
+			background-color: rgb(230,230,230);
+		}
+
+		#box{
+			position: relative;
+			margin: auto;
+			box-shadow: inset 2px 2px 8px 3px black;
+			background-color: white;
+		}
+
+		#canvas{
+			height: 100%;
+			width: 100%;
+		}
+	</style>
 	<script type="text/javascript" charset="UTF-8" src="Log.js"></script>
 	<script>
-		
+		var cubes = [];
+		var AREA = {height: 400, width: 400};
+		var CTX;
+
+		function Cube(i){
+			this.posX = Math.random() *AREA.width;
+			this.posY = Math.random() *AREA.height;
+
+			var angle = Math.random() *Math.PI *2;
+			this.vec = {x: Math.cos(angle) *100, y: Math.sin(angle) *100};
+
+			this.hit = false;
+			this.selected = false;
+
+			this.logId = 'cubes.'+i;
+			var self = this;
+
+
+			var logNode = Log.add(this.logId, {posX: this.posX, posY: this.posY, hit: this.hit}, function(newV, oldV){return Math.floor(newV);});
+
+			logNode.addEventListener('mouseenter', function(){ 
+				self.selected = true;
+				this.style.backgroundColor = 'rgba(0,0,0,.2)';
+
+			}, false);
+			logNode.addEventListener('mouseleave', function(){ 
+				self.selected = false;
+				this.style.backgroundColor = '';
+
+			}, false);
+		}
+
+		Cube.SIZE = 10;
+
+		Cube.prototype = {
+			update : function(delta){
+				this.posX += this.vec.x *delta;
+				this.posY += this.vec.y *delta;
+
+				if(this.posX < -Cube.SIZE)
+					this.posX += AREA.width +Cube.SIZE;
+
+				else if(this.posX > AREA.width +Cube.SIZE)
+					this.posX -= AREA.width +Cube.SIZE;
+
+
+				if(this.posY < -Cube.SIZE)
+					this.posY += AREA.height +Cube.SIZE;
+
+				else if(this.posY > AREA.height +Cube.SIZE)
+					this.posY -= AREA.height +Cube.SIZE;
+
+				Log.update(this.logId, {posX: this.posX, posY: this.posY, hit: this.hit});
+
+				this.hit = false;
+			},
+
+			collid: function(other){
+				if(Math.abs(other.posX -this.posX) < Cube.SIZE && Math.abs(other.posY -this.posY) < Cube.SIZE){
+					this.hit = true;
+					other.hit = true;
+				}
+			},
+
+			draw : function(){
+				var off = this.selected ? 100 : 0;
+
+				CTX.fillStyle = this.hit ? "rgb("+ (150+off) +",150,150)" : "rgb("+ (80+off) +",80,80)";
+				CTX.fillRect(this.posX -(Cube.SIZE)/2, this.posY - Cube.SIZE/2, Cube.SIZE, Cube.SIZE);
+			}
+		};
+
+		var lastFrame;
+		function frameUpdate(){
+			var i,j;
+
+			var delta = (Date.now() -lastFrame) /1000;
+			lastFrame = Date.now();
+
+			for(i=0; i<cubes.length; i++)
+				cubes[i].update(delta);
+
+			for(i=0; i<cubes.length; i++)
+				for(j=i+1; j<cubes.length; j++)
+					cubes[i].collid( cubes[j] );
+
+			CTX.clearRect(0, 0, AREA.width, AREA.height);
+			for(i=0; i<cubes.length; i++)
+				cubes[i].draw();
+
+			requestAnimationFrame(frameUpdate);
+		}
+
+		function resize(){
+			var box = document.getElementById('box');
+			box.style.top = (window.innerHeight/2 - box.offsetHeight/2) +'px';
+		}
+
+		window.addEventListener('load', function(){
+			Log.add('cubes',{});
+
+			var canvas = document.getElementById('canvas');
+			canvas.height = AREA.height;
+			canvas.width = AREA.width;
+
+			var boxStyle = document.getElementById('box').style;
+			boxStyle.height = AREA.height + 'px';
+			boxStyle.width = AREA.width +'px';
+
+			CTX = canvas.getContext('2d');
+
+			for(var i=0; i<50; i++)
+				cubes.push( new Cube(i) );
+
+			lastFrame = Date.now();
+			requestAnimationFrame(frameUpdate);
+
+			resize();
+		}, false);
+
+		window.addEventListener('resize', resize, false);
 	</script>
 </head>
-<body style='height:100%;'>
-.
-
-
-
+<body>
+	<div id='box'>
+		<canvas id='canvas'>
+		</canvas>
+	</div>
 </body>
