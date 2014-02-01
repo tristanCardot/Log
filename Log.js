@@ -19,8 +19,6 @@ function Log(){
 	
 	this.eventStat = {enable: 0, drag: false, posX: 0, posY: 0, x: 'right', y: 'top'};
 	
-	this.bindLog();
-	
 	this.lastTimeError = 0;
 	this.lastError = "";
 	this.disableError = false;
@@ -38,7 +36,7 @@ Log.prototype = {
 	/**[EN] onload => append the 'logNode' element *
 	  *[FR] onload => ajoute l'element 'logNode'   */
 	bindLog : function(){
-		document.body.appendChild(log.logNode);
+		document.body.appendChild(this.logNode);
 	},
 	
 	/**[EN] Create a CSSStyleSheet object added to head of the document. If you want rules access use 'log.sheet', an easier access to the 'div#Log' rule with 'log.style' *
@@ -47,13 +45,13 @@ Log.prototype = {
 		var style = document.createElement('style');
 		document.head.appendChild(style);
 		this.sheet = style.sheet;
-		
-		this.sheet.insertRule("div#Log{",
+
+		this.sheet.insertRule("div#Log{"+
 				"position:fixed;"+
 				"min-height:100px;"+
 				"min-width:100px;"+
 
-				"cursor: default;"+
+				"cursor:default;"+
 				
 				"color:white;"+
 				"background-color:rgba(0,0,0,.6);"+
@@ -63,13 +61,13 @@ Log.prototype = {
 				"text-align:justify;"+
 				"z-index:200;}", 0);
 		
-		this.sheet.insertRule("div.LogObject{"+
+		this.sheet.insertRule("div#Log div.LogObject{"+
 				"overflow:hidden;"+
 				"box-shadow:-1px -1px 0px 0px;"+
 				"margin-left:1px;"+
 				"padding-left:7px;}", 1);
 		
-		this.sheet.insertRule("div.LogValue{"+
+		this.sheet.insertRule("div#Log div.LogValue{"+
 				"overflow:hidden;"+
 				"box-shadow:5px -1px 0px;"+
 				"padding-left:8px;}", 2);
@@ -101,7 +99,7 @@ Log.prototype = {
 		this.nodeValue.innerHTML = "<span></span> ";
 	},
 	
-	add : function(section, value, process, overwrite, event){
+	add : function(section, value, process, overwrite, mouseEnter, mouseLeave){
 		if(this.section[section] !== undefined && !overwrite)
 			return this.logError("["+ section +"] use overwrite boolean for an existing section.");
 		
@@ -121,6 +119,15 @@ Log.prototype = {
 		}
 
 		this.addOnTree(section, parent, name, value, process);
+
+		var sec = this.section[section];
+		if(sec !== undefined){
+			if(mouseEnter instanceof Function)
+				sec.node.addEventListener('mouseenter', mouseEnter, false);
+
+			if(mouseEnter instanceof Function)
+				sec.node.addEventListener('mouseleave', mouseLeave, false);
+		}
 	},
 	
 	addOnTree : function(section, parent, name, value, process){
@@ -136,7 +143,7 @@ Log.prototype = {
 				parent.value[name] = value;
 				
 				sec = {value: {}, node: node, name: name, disable: false};
-				node.lastChild.section = sec;	
+				node.lastChild['data-section'] = sec;	
 				this.section[section] = sec;	
 				
 				for(key in value)
@@ -156,7 +163,7 @@ Log.prototype = {
 					sec.process = process;
 				}
 				
-				node.firstChild.section = sec;
+				node.firstChild['data-section'] = sec;
 				this.section[section] = sec;
 				
 				parent.node.appendChild(node);
@@ -204,7 +211,7 @@ Log.prototype = {
 			else if(!sec.disable)
 				for(key in sec.value)
 					if(value[key] !== undefined)
-						this.update(section +'.'+ key, value[key]);
+						this.update(section +'.'+ key, value[key], forceAdd);
 
 		}else
 			if(sec.parent === undefined)
@@ -337,11 +344,11 @@ Log.prototype = {
 			side = {x:false, y:false};
 		
 		if(stat.enable === 1){
-			x = stat.x==='left'? e.clientX - (stat.posX) : (document.body.clientWidth - e.clientX) - (w-stat.posX);
-			y = stat.y==='top'? e.clientY - (stat.posY): (document.body.clientHeight - e.clientY) - (h-stat.posY);
+			x = stat.x==='left'? e.clientX - (stat.posX) : (window.innerWidth - e.clientX) - (w-stat.posX);
+			y = stat.y==='top'? e.clientY - (stat.posY): (window.innerHeight - e.clientY) - (h-stat.posY);
 			
 		}else{
-			switch(stat.enable+ (stat.x === 'right' ? 4 : 0)){
+			switch(stat.enable +(stat.x === 'right' ? 4 : 0)){
 				case 2: case 3:
 						x -= (r - offX);
 						w += (r - offX);
@@ -363,7 +370,7 @@ Log.prototype = {
 						
 					break;
 			}
-			switch(stat.enable + (stat.y === 'bottom' ? 4 : 0)){
+			switch(stat.enable +(stat.y === 'bottom' ? 4 : 0)){
 				case 2: case 4:
 						y -= (r - offY);
 						h += (r - offY);
@@ -387,13 +394,13 @@ Log.prototype = {
 			}
 		}
 		
-		if(document.body.clientWidth<w)
-			w = document.body.clientWidth;
-		var maxX = document.body.clientWidth - w;
+		if(window.innerWidth<w)
+			w = window.innerWidth;
+		var maxX = window.innerWidth - w;
 		
-		if(document.body.clientHeight<h)
-			h = document.body.clientHeight;
-		var maxY = document.body.clientHeight - h;
+		if(window.innerHeight<h)
+			h = window.innerHeight;
+		var maxY = window.innerHeight - h;
 		
 		if(x<0)
 			x=0;
@@ -418,7 +425,7 @@ Log.prototype = {
 		else{
 			if(h<100){
 				if(side.y)
-					y -= 100-h;
+					y -= (100-h);
 				h = 100;
 			}
 			node.style.height = h +'px';
@@ -506,4 +513,7 @@ Log.prototype = {
 		console.error("[Log]: "+ text +"("+ date.getUTCMinutes() +":"+ date.getUTCSeconds() +"."+ date.getUTCMilliseconds() +")");
 		return true;
 	}
-};})();
+};
+
+return new Log();
+})();
