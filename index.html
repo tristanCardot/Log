@@ -75,7 +75,7 @@
 				else if(this.posY > AREA.height +Cube.SIZE)
 					this.posY -= AREA.height +Cube.SIZE;
 
-				Log.update(this.logId, {posX: this.posX, posY: this.posY, hit: this.hit});
+				Log.update(this.logId, this);
 
 				this.hit = false;
 			},

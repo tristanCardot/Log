@@ -258,20 +258,41 @@ Log.prototype = {
 	},
 	
 	nodeEvent : function(e){
-		if(this.parentNode.style.height === ""){
-			this.parentNode.style.height = parseInt(log.style.fontSize)*1.2 + 'px';
-			
-			if(this['data-section'].disable !== undefined)
-				this['data-section'].disable = true;
-			
+		if(e.ctrlKey){
+			var recursiveMinimise = function(select, minimise){
+				if(minimise){
+					select.style.height = parseInt(log.style.fontSize)*1.2 +'px';
+					select.firstChild['data-section'].disable = true;
+
+				}else{
+					select.style.height = "";
+					select.firstChild['data-section'].disable = false;
+				}
+
+				var list = select.getElementsByClassName('LogObject');
+				for(var i=0; i<list.length; i++)
+					recursiveMinimise(list[i], minimise);
+
+				list = select.getElementsByClassName('LogValue');
+				for(var i=0; i<list.length; i++)
+					recursiveMinimise(list[i], minimise);
+			};
+
+			var minimise = (this.parentNode.style.height === "");
+			recursiveMinimise(this.parentNode, minimise);
+
 		}else{
-			this.parentNode.style.height = "";
+			if(this.parentNode.style.height === ""){
+			this.parentNode.style.height = parseInt(log.style.fontSize)*1.2 +'px';
+			this['data-section'].disable = true;
 			
-			if(this['data-section'].disable !== undefined)
+			}else{
+				this.parentNode.style.height = "";
 				this['data-section'].disable = false;
+			}
 		}
 	},
-	
+
 	
 	containerEvent : function(e){
 		var stat = this.Log.eventStat;
@@ -444,22 +465,6 @@ Log.prototype = {
 				node.style.top = "0px";
 				node.style.bottom = "";
 			}
-	},
-	
-	trunc : function(value){
-		return Math.round(value*1000)/1000;
-	},
-
-	/**@since Not a really usefull function, just a quik acces to hide the LogNode			  	 *
-	  *  [FR] Une fonction pas vraiment utile, simplement un accés rapide pour cacher la LogNode */
-	hide : function(){
-		this.style.display = "none";
-	},
-	
-	/**@since Not a really usefull function, just a quik acces to display the LogNode			   *
-	  *  [FR] Une fonction pas vraiment utile, simplement un accés rapide pour afficher la LogNode */
-	show : function(){
-		this.style.display = "";
 	},
 	
 	/**@since The good way to set the fontSize property					   *
