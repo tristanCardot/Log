@@ -24,7 +24,7 @@ function Log(){
 	this.disableError = false;
 
 	if(document.readyState === "complet")
-		this.bindLog();	
+		this.bindLog();
 
 	else{
 		var self = this;
@@ -63,14 +63,14 @@ Log.prototype = {
 		
 		this.sheet.insertRule("div#Log div.LogObject{"+
 				"overflow:hidden;"+
-				"box-shadow:-1px -1px 0px 0px;"+
+				"box-shadow: 5px -2px 0px white;"+
 				"margin-left:1px;"+
 				"padding-left:7px;}", 1);
 		
 		this.sheet.insertRule("div#Log div.LogValue{"+
 				"overflow:hidden;"+
-				"box-shadow:5px -1px 0px;"+
-				"padding-left:8px;}", 2);
+				"box-shadow: 5px -2px 0px white;"+
+				"padding-left: 8px;}", 2);
 		
 		this.style = this.sheet.cssRules[0].style;
 	},
@@ -84,12 +84,19 @@ Log.prototype = {
 		s.height = "300px";
 		s.width = "200px";
 		s.right = s.top = "0px";
-		
-		this.logNode.addEventListener('mousedown', this.containerEvent, false);
-		this.logNode.addEventListener('mouseup', this.containerEvent, false);
+
+		this.logNode.addEventListener('mousedown', this.containerDownEvent, false);
+		this.logNode.addEventListener('touchstart', this.containerDownEvent, false);
+
+		this.logNode.addEventListener('mouseup', this.containerUpEvent, false);
+		this.logNode.addEventListener('touchend', this.containerUpEvent, false);
+
 		this.logNode.addEventListener('mousemove', this.containerMoveEvent, false);
+		this.logNode.addEventListener('touchmove', this.containerMoveEvent, false);
+
 		this.logNode.addEventListener('mouseout', this.containerMoveEvent, false);
-		
+		this.logNode.addEventListener('touchcancel', this.containerMoveEvent, false);
+
 		this.nodeObject = document.createElement('div');
 		this.nodeObject.className = 'LogObject';
 		this.nodeObject.innerHTML = "<span></span>";
@@ -134,14 +141,15 @@ Log.prototype = {
 			if(value instanceof Object){
 				node = this.nodeObject.cloneNode(true);
 				node.firstChild.addEventListener('click', this.nodeEvent, false);
+				node.firstChild.addEventListener('touchstart', this.nodeEvent, false);
 				node.firstChild.innerHTML = name;
 				
 				parent.node.appendChild(node);
 				parent.value[name] = value;
 				
 				sec = {value: {}, node: node, name: name, disable: false};
-				node.lastChild['data-section'] = sec;	
-				this.section[section] = sec;	
+				node.lastChild['data-section'] = sec;
+				this.section[section] = sec;
 				
 				for(key in value)
 					this.addOnTree(section +'.'+ key, sec, key, value[key], process);
@@ -150,6 +158,7 @@ Log.prototype = {
 				node = this.nodeValue.cloneNode(true);
 				node.firstChild.innerHTML = name +": ";
 				node.firstChild.addEventListener('click', this.nodeEvent, false);
+				node.firstChild.addEventListener('touchstart', this.nodeEvent, false);
 				node.lastChild.data = value;
 				
 				node.style.height =  parseInt(this.style.fontSize)*1.2 + 'px';
@@ -213,8 +222,9 @@ Log.prototype = {
 			else{
 				if(sec.process !== undefined)
 					sec.value = sec.process(value, sec.value);
-
-				sec.sendValue = value;
+				else
+					sec.value = value;
+				
 				sec.node.data = sec.value;
 
 				sec.parent.value[sec.name] = sec.value;
@@ -294,7 +304,12 @@ Log.prototype = {
 	},
 
 	
-	containerEvent : function(e){
+	containerDownEvent : function(e){
+		if(/touch/.test( e.type)){
+			e.preventDefault();
+			e = e.touches.item(0);
+		}
+		
 		var stat = this.Log.eventStat;
 		var node = this;
 		
@@ -304,39 +319,39 @@ Log.prototype = {
 		stat.posX = offX;
 		stat.posY = offY;
 		
-		switch(e.type){
-			case 'mousedown':
-					offX = Math.abs(stat.posX - node.clientWidth/2);
-					offY = Math.abs(stat.posY - node.clientHeight/2);
-					
-					if(offX < node.clientWidth/4 && offY < node.clientHeight/4)
-						stat.enable = 1;
-						
-					else if(offX > node.clientWidth/2-100 && offY > node.clientHeight/2-100)
-						if(stat.posX < node.clientWidth/2)
-							if(stat.posY < node.clientHeight/2)
-								stat.enable = 2;
-							else
-								stat.enable = 3;
-					
-						else
-							if(stat.posY < node.clientHeight/2)
-								stat.enable = 4;
-							else
-								stat.enable = 5;
-					
-				break;
-			case 'mouseup':
-					stat.enable = 0;
-					stat.drag = false;
-					
-				break;
-		}
+		offX = Math.abs(stat.posX - node.clientWidth/2);
+		offY = Math.abs(stat.posY - node.clientHeight/2);
+		
+		if(offX < node.clientWidth/4 && offY < node.clientHeight/4)
+			stat.enable = 1;
+			
+		else if(offX > node.clientWidth/2-100 && offY > node.clientHeight/2-100)
+			if(stat.posX < node.clientWidth/2)
+				if(stat.posY < node.clientHeight/2)
+					stat.enable = 2;
+				else
+					stat.enable = 3;
+		
+			else
+				if(stat.posY < node.clientHeight/2)
+					stat.enable = 4;
+				else
+					stat.enable = 5;
+	},
+	
+	containerUpEvent : function(){
+		this.Log.eventStat.enable = 0;
+		this.Log.eventStat.drag = false;
 	},
 	
 	/**@since Called when the LogNode is moved to update position and hooked side                   *
 	  *  [FR] Appelé quand le LogNode est déplacé pour mettre à jour la position et le côtè accroché*/
 	containerMoveEvent : function(e){
+		if(/touch/.test( e.type)){
+			e.preventDefault();
+			e = e.touches.item(0);
+		}
+		
 		var stat = this.Log.eventStat;
 		if(stat.enable === 0)
 			return;
